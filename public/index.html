@@ -19,6 +19,7 @@
         signInWithPopup,
         sendEmailVerification,
       } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+      import { getDatabase,ref,set,onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
       // import {shoe} from "china"
       //Firebase Configuration
@@ -29,12 +30,15 @@
         storageBucket: "second-9ea74.appspot.com",
         messagingSenderId: "462314352184",
         appId: "1:462314352184:web:37a81382a6af2d0425c0cd",
+        databaseURL: "https://second-9ea74-default-rtdb.firebaseio.com"
       };
 
       //Global Variable declaration
       const app = initializeApp(firebaseConfig);
       const provider = new GoogleAuthProvider();
       const auth = getAuth();
+      const database = getDatabase()
+      let userIndex = 0
       document.getElementById("signInBtn").addEventListener("click", () => {
         // alert("Hello")
         signInWithPopup(auth, provider)
@@ -49,14 +53,35 @@
             </h1>
             <img src='${response.user.photoURL}'/>
           `;
+          let user = {
+            email: response.user.email,
+            displayName : response.user.displayName,
+            profilePic : response.user.photoURL,
+            id : response.user.uid
+          }
+          let userRef = ref(database,`allUsers/${userIndex}`)
+          set(userRef,user)
             // sendEmailVerification(auth.currentUser).then(() => {
             //   console.log("successful");
             // });
-            window.location.href = "dashboard.html"
+            window.location.href = "chat.html"
+            console.log(response)
           })
           .catch((error) => {
             console.log(error);
           });
+
+          let allUsersRef = ref(database,"allUsers")
+          onValue(allUsersRef,(snapshot)=>{
+            let data =snapshot.val()
+            console.log(data)
+            if(data){
+              userIndex = data.length
+            }else{
+              userIndex = 0
+            }
+            
+          })
       });
     </script>
   </body>
