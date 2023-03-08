@@ -9,6 +9,7 @@
 </head>
     <body>
         <h1 class="text-center">Chat with your friends</h1>
+        <hr>
         <div class="container-fluid">
             <div class="row">
                 <!-- ALL CHAT USERS -->
@@ -16,8 +17,8 @@
 
                 </div>
                  <!-- Chat Page -->
-                <div class="col-8"> 
-
+                <div class="col-8" id="chatDiv"> 
+                    <h1>You have not selected a chat, kindly select one</h1>
                 </div>
             </div>
         </div>
@@ -41,17 +42,72 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth();
         const database = getDatabase();
-        let allChatsRef = ref(database,"allUsers")
-        onValue(allChatsRef,(snapshot)=>{
+        let allChats = []
+        let chatIndex = 0
+        let allUsersRef = ref(database,"allUsers")
+        onValue(allUsersRef,(snapshot)=>{
             let data = snapshot.val()
             console.log(data)
+            allUsersDiv.innerHTML = ""
             data.map((eachUser)=>{
+                
                 allUsersDiv.innerHTML += `
-                <h1>${eachUser.displayName}</h1>
+                <h1 id='chatHeader' onclick="startChat('${eachUser.id}','${eachUser.displayName}')">${eachUser.displayName}</h1>
                 <hr/>
                 `
             })
         })
+        let allChatsRef = ref(database,"allChats")
+        onValue(allChatsRef,(snapshot)=>{
+            let data = snapshot.val()
+            console.log(data)
+            if(data){
+                chatIndex = data.length
+                allChats = data
+            }else{
+                chatIndex = 0
+            }
+            
+        })
+        const startChat= (userId,displayName)=>{
+            chatDiv.innerHTML = ""
+            chatDiv.innerHTML += `
+            <h1>${displayName}</h1>
+            `
+            console.log(userId)
+            let personalChats= allChats.filter((eachItem)=>eachItem.senderId==auth.currentUser.uid && eachItem.receiverId==userId)
+            console.log(personalChats)
+            personalChats.map((eachItem)=>{
+                chatDiv.innerHTML += `
+                    <h1>${eachItem.message}</h1>
+                    </hr>
+                `
+            })
+            chatDiv.innerHTML += `
+            <input placeholder="Type in your chat" id="chatMsg"/>
+            <button onclick="sendChat('${userId}')">Send Chat</button>
+            `
+        }
+        const sendChat = (chatPartnerId)=>{
+            let chatPartner = chatPartnerId
+            let currentUser = auth.currentUser.uid
+            console.log(chatMsg.value)
+            let day = new Date()
+            let chat = {
+                message : chatMsg.value,
+                time: day.toLocaleTimeString(),
+                senderId: currentUser,
+                receiverId: chatPartner,
+            }
+            let chatRef = ref(database,`allChats/${chatIndex}`)
+            set(chatRef,chat)
+        }
+        window.startChat = startChat
+        window.sendChat = sendChat
+
+        // Pass the chatPartnerID through a function
+        // Sending the chat to the database
+        // Filtering the chats to only display the current user's chat's
         </script>
     </body>
 </html>
