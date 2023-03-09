@@ -5,16 +5,32 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 </head>
 <body>
-    <h1>Upload Your Movie Here</h1>
-    <input type="text" placeholder="Movie Title" id="movieTitle">
-    <input type="text" placeholder="Movie Duration" id="movieDuration">
-    <input type="text" placeholder="Movie Genre" id="movieGenre">
-    <input type="text" placeholder="Movie Cast" id="movieCast">
-    <input type="text" placeholder="Movie Synopsis" id="movieSynopsis">
-    <input type="file" id="movieFile">
-    <button id="uploadBtn">Upload Your Movie</button>
+    <div id="progressBar">
+
+    </div>
+    
+    
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-9 mx-auto shadow-sm py-4 my-4">
+                <h1 class="text-center">Upload Your Movie Here</h1>
+                <form action="" id="myForm">
+                    <div id="alertDiv"></div>
+                    <input type="text" placeholder="Movie Title" id="movieTitle" class="form-control my-2">
+                    <input type="text" placeholder="Movie Duration" id="movieDuration" class="form-control my-2">
+                    <input type="text" placeholder="Movie Genre" id="movieGenre" class="form-control my-2">
+                    <input type="text" placeholder="Movie Cast" id="movieCast" class="form-control my-2">
+                    <input type="text" placeholder="Movie Synopsis" id="movieSynopsis" class="form-control my-2">
+                    <input type="file" id="movieFile" accept="" class="form-control-file my-2">
+                    <button class="btn btn-info w-100 py-2 my-3" id="uploadBtn" type="button">Upload Your Movie</button>
+                </form>
+            </div>
+        </div>
+    </div>
+  
 
     <script type="module">
         // Save the info to the database
@@ -24,7 +40,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
         import { getAuth, onAuthStateChanged,signOut } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
         import { getDatabase,ref,set,onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
-        import { getStorage,ref as stRef,uploadBytesResumable} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js"
+        import { getStorage,ref as stRef,uploadBytesResumable,getDownloadURL} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js"
 
         const firebaseConfig = {
           apiKey: "AIzaSyAH6X36Jl-5RPI9vpXrjQFTLvzKRGsutug",
@@ -53,6 +69,8 @@
                 synopsis : movieSynopsis.value,
                 movieName : filename
             }
+            // Clear the previous inputs
+            myForm.reset()
             // Save the info into the database
             let movieRef = ref(database,`allMovies/${movieIndex}`)
             set(movieRef,movie)
@@ -61,7 +79,22 @@
             let movieStRef = stRef(storage,`${filename}`)
             const uploadTask = uploadBytesResumable(movieStRef,file)
             uploadTask.on("state-changed",(snapshot)=>{
-                console.log((snapshot.bytesTransferred/snapshot.totalBytes)*100)
+                let percentageUpload = Math.round((snapshot.bytesTransferred/snapshot.totalBytes)*100)
+                // Add a progress bar and an alert
+                progressBar.innerHTML = `
+                <div class="progress" >
+                    <div 
+                        class="progress-bar progress-bar-striped progress-bar-animated" 
+                        role="progressbar" 
+                        style="width: ${percentageUpload}%;" 
+                        aria-valuenow="${percentageUpload}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100"
+                        >${percentageUpload}%
+                    </div>
+                </div>
+               
+                `
             },
             (error)=>{
                 // in case the upload fails
@@ -70,6 +103,18 @@
             ()=>{
                 // handle successful uploads
                 console.log("upload is complete")
+                progressBar.innerHTML = ""
+                alertDiv.innerHTML = `
+                <p class="text-center">Upload Successful!</p>
+                `
+                alertDiv.className = "alert alert-success"
+                setTimeout(()=>{
+                    alertDiv.innerHTML = ""
+                    alertDiv.className = ""
+                },3000)
+                getDownloadURL(uploadTask.snapshot.ref).then((downloadURL)=>{
+                    console.log(downloadURL)
+                })
             }
             )
         })
